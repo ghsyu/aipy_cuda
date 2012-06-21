@@ -44,19 +44,7 @@ class TestInterp3d(unittest.TestCase):
         self.assertTrue(n.all(interp3d(self.data_ones, .1, .1, .1, (self.xmin,self.xmax), (self.ymin,self.ymax), (self.zmin,self.zmax))))
     
 
-def vis_sim(baseline, src_dir, src_int, src_index, freqs, mfreq): # XXX need to update to also use beam array
-    bl = baseline.copy(); bl.shape = (bl.size,1)
-    bl = n.dot(src_dir, bl)
-    freqs = freqs.copy(); freqs.shape = (1,freqs.size)
-    src_int = src_int.copy(); src_int.shape = (src_int.size,1)
-    src_index = src_index.copy(); src_index.shape = (src_index.size,1)
-    mfreq = mfreq.copy(); mfreq.shape = (mfreq.size,1)
-    amp = src_int * (freqs/mfreq)**src_index
-    phs = n.exp(-2j*n.pi * freqs * bl)
-    return n.sum(amp * phs, axis=0)
-
-#def vis_sim(baseline, src_dir, src_int, src_index, freqs, mfreq,
-#        beam_arr, lmin, lmax, mmin, max, beamfqmin, beamfqmaxq):
+#def vis_sim(baseline, src_dir, src_int, src_index, freqs, mfreq): # XXX need to update to also use beam array
 #    bl = baseline.copy(); bl.shape = (bl.size,1)
 #    bl = n.dot(src_dir, bl)
 #    freqs = freqs.copy(); freqs.shape = (1,freqs.size)
@@ -67,6 +55,26 @@ def vis_sim(baseline, src_dir, src_int, src_index, freqs, mfreq): # XXX need to 
 #    phs = n.exp(-2j*n.pi * freqs * bl)
 #    return n.sum(amp * phs, axis=0)
 
+def vis_sim(baseline, src_dir, src_int, src_index, freqs, mfreq,
+        beam_arr, lmin, lmax, mmin, mmax, beamfqmin, beamfqmax):
+    bl = baseline.copy(); bl.shape = (bl.size,1)
+    bl = n.dot(src_dir, bl)
+    freqs = freqs.copy(); freqs.shape = (1,freqs.size)
+    src_int = src_int.copy(); src_int.shape = (src_int.size,1)
+    src_index = src_index.copy(); src_index.shape = (src_index.size,1)
+    mfreq = mfreq.copy(); mfreq.shape = (mfreq.size,1)
+    #Interpolate the beamformer values from the beam_arr
+    x = (n.array([l[0] for l in src_dir]) - lmin)/(lmax-lmin)
+    y = (n.array([m[1] for m in src_dir]) - mmin)/(mmax-mmin)
+    z = freqs - beamfqmin/(beamfqmax - beamfqmin)
+    
+    beam = interp3d(beam_arr, x, y, z, [0,1], [0,1], [0,1])
+    beam = beam.copy(); beam.shape = (src_int.size, freqs.size)
+    
+    amp = beam * (src_int * (freqs/mfreq)**src_index)
+    phs = n.exp(-2j*n.pi * freqs * bl)
+    return n.sum(amp * phs, axis=0)
+
 class Test_Aipy(unittest.TestCase):
     def setUp(self):
         self.NFREQ = 32
@@ -76,7 +84,7 @@ class Test_Aipy(unittest.TestCase):
         self.src_index = n.array([0., 0], dtype=n.float32)
         self.freqs = n.linspace(.1,.2, self.NFREQ).astype(n.float32)
         self.mfreqs = n.array([.150] * 2, dtype=n.float32)
-        self.beam_arr = n.ones((100,100,10), dtype=n.float32)
+        self.beam_arr = n.random.random((100,100,10), dtype=n.float32)
         self.lmin, self.lmax = (-1,1)
         self.mmin, self.mmax = (-1,1)
         self.beamfqmin, self.beamfqmax = (.100, .200) # GHz
