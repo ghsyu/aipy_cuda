@@ -13,7 +13,7 @@ PyObject *wrap_vis_sim(PyObject *self, PyObject *args){
                                                          &PyArray_Type, &src_dir, 
                                                          &PyArray_Type, &src_int,
                                                          &PyArray_Type, &src_index,
-                             						     &PyArray_Type, &freqs,
+                             				 &PyArray_Type, &freqs,
                                                          &PyArray_Type, &mfreqs,
                                                          &PyArray_Type, &beam_arr, 
                                                          &lmin, &lmax, &mmin, &mmax, 

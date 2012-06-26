@@ -13,18 +13,24 @@ def interp3d(data, x,y,z, xlim, ylim, zlim):
     x_px = (x-x0)/dx
     y_px = (y-y0)/dy
     z_px = (z-z0)/dz
-    # XXX should probably do a bounds check here
     x_px_fl = n.floor(x_px).astype(n.int)
     y_px_fl = n.floor(y_px).astype(n.int)
     z_px_fl = n.floor(z_px).astype(n.int)
-    d000 = data[x  ,y  ,z  ]
-    d100 = data[x+1,y  ,z  ]
-    d010 = data[x  ,y+1,z  ]
-    d110 = data[x+1,y+1,z  ]
-    d001 = data[x  ,y  ,z+1]
-    d101 = data[x+1,y  ,z+1]
-    d011 = data[x  ,y+1,z+1]
-    d111 = data[x+1,y+1,z+1]
+    x_px_flp1,  y_px_flp1,  z_px_flp1 = x_px_fl + 1,  y_px_fl + 1,  z_px_fl + 1
+    if n.any(x_px_flp1 >= data.shape[0]):
+        x_px_flp1 -= 1
+    if n.any(y_px_flp1 >= data.shape[1]):
+        y_px_flp1 -= 1
+    if n.any(z_px_flp1 >= data.shape[2]):
+        z_px_flp1 -= 1
+    d000 = data[x_px_fl  ,y_px_fl  ,z_px_fl  ]
+    d100 = data[x_px_flp1,y_px_fl  ,z_px_fl  ]
+    d010 = data[x_px_fl  ,y_px_flp1,z_px_fl  ]
+    d110 = data[x_px_flp1,y_px_flp1,z_px_fl  ]
+    d001 = data[x_px_fl  ,y_px_fl  ,z_px_flp1]
+    d101 = data[x_px_flp1,y_px_fl  ,z_px_flp1]
+    d011 = data[x_px_fl  ,y_px_flp1,z_px_flp1]
+    d111 = data[x_px_flp1,y_px_flp1,z_px_flp1]
     x_fr = x_px - x_px_fl
     y_fr = y_px - y_px_fl
     z_fr = z_px - z_px_fl
@@ -66,35 +72,18 @@ def vis_sim(baseline, src_dir, src_int, src_index, freqs, mfreq,
     
     #Isolate the l and m coordinates of src_dir
     i = n.array([l[0] for l in src_dir])
-    j = n.array([m[1] for m in src_dir])   
+    j = n.array([m[1] for m in src_dir])
     k = freqs
     
-    #Find d000 for interp3d for each coordinate
-    a = n.array([[idx > x for x in n.linspace(lmin,      lmax,      beam_arr.shape[0])] for idx in i]).argmin(axis = 1)
-    b = n.array([[idx > y for y in n.linspace(mmin,      mmax,      beam_arr.shape[1])] for idx in j]).argmin(axis = 1)
-    c = n.array([[idx > z for z in n.linspace(beamfqmin, beamfqmax, beam_arr.shape[2])] for idx in k]).argmin(axis = 1)
-    beam_coords = zip(a,b)
-    beam = n.array([[interp3d(beam_arr, coords[0] - 1, coords[1] - 1, fq - 1, [lmin, lmax], [mmin, mmax], [beamfqmin, beamfqmax]) for coords in beam_coords] for fq in c])
+#    #Find d000 for interp3d for each coordinate
+#    a = n.array([[idx > x for x in n.linspace(lmin,      lmax,      beam_arr.shape[0])] for idx in i]).argmin(axis = 1)
+#    b = n.array([[idx > y for y in n.linspace(mmin,      mmax,      beam_arr.shape[1])] for idx in j]).argmin(axis = 1)
+#    c = n.array([[idx > z for z in n.linspace(beamfqmin, beamfqmax, beam_arr.shape[2])] for idx in k]).argmin(axis = 1)
+    beam_coords = zip(i, j)
+    beam = n.array([[interp3d(beam_arr, coords[0], coords[1], fq, [lmin, lmax], [mmin, mmax], [beamfqmin, beamfqmax])
+                     for coords in beam_coords]
+                        for fq in freqs])
     beam = beam.copy(); beam.shape = (src_int.size, freqs.size)
-    
-#     x = y = []
-#    for i_id in i:
-#       idx = 0
-#       while n.linspace(lmin, lmax, len(beam_arr[0])) < i_id:
-#           idx += 1
-#       x.append(idx)
-#   for j_id in j:
-#       idx = 0
-#       while n.linspace(lmin, lmax, len(beam_arr[1])) < j_id:
-#           idx += 1
-#       y.append(idx)
-#      
-#   for d0 in x:
-#       for d1 in y:
-#           for d2 in xrange(len(freqs)):
-#               src_beam = interp3d(beam_arr, d0, d1, d2, [lmin,lmax], [mmin,mmax], [beamfqmin,beamfqmax])
-    #beam = beam.copy(); beam.shape = (src_int.size, freqs.size)
-    
     amp = beam * (src_int * (freqs/mfreq)**src_index)
     phs = n.exp(-2j*n.pi * freqs * bl)
     return n.sum(amp * phs, axis=0)
@@ -109,6 +98,7 @@ class Test_Aipy(unittest.TestCase):
         self.freqs = n.linspace(.1,.2, self.NFREQ).astype(n.float32)
         self.mfreqs = n.array([.150] * 2, dtype=n.float32)
         self.beam_arr = n.random.random((100,100,10)) #XXX Currently can either be float32 or float64
+        #self.beam_arr = n.ones((100,100,10), dtype=n.float32)
         self.lmin, self.lmax = (-1,1)
         self.mmin, self.mmax = (-1,1)
         self.beamfqmin, self.beamfqmax = (.100, .200) # GHz
@@ -131,14 +121,16 @@ class Test_Aipy(unittest.TestCase):
     def test_vis_1src_value(self):
         vis = a.vis_sim(self.baseline, self.src_dir[:1], self.src_int[:1], self.src_index[:1], self.freqs, self.mfreqs[:1],
             self.beam_arr, self.lmin, self.lmax, self.mmin, self.mmax, self.beamfqmin, self.beamfqmax)
-        vis_ans = vis_sim(self.baseline, self.src_dir[:1], self.src_int[:1], self.src_index[:1], self.freqs, self.mfreqs[:1])
+        vis_ans = vis_sim(self.baseline, self.src_dir[:1], self.src_int[:1], self.src_index[:1], self.freqs, self.mfreqs[:1],
+            self.beam_arr, self.lmin, self.lmax, self.mmin, self.mmax, self.beamfqmin, self.beamfqmax)
         print vis
         print vis_ans
         self.assertTrue(n.all(n.around(n.abs(vis - vis_ans), 3) == 0))
     def test_vis_2src_value(self):
         vis = a.vis_sim(self.baseline, self.src_dir, self.src_int, self.src_index, self.freqs, self.mfreqs,
             self.beam_arr, self.lmin, self.lmax, self.mmin, self.mmax, self.beamfqmin, self.beamfqmax)
-        vis_ans = vis_sim(self.baseline, self.src_dir, self.src_int, self.src_index, self.freqs, self.mfreqs)
+        vis_ans = vis_sim(self.baseline, self.src_dir, self.src_int, self.src_index, self.freqs, self.mfreqs,
+            self.beam_arr, self.lmin, self.lmax, self.mmin, self.mmax, self.beamfqmin, self.beamfqmax)
         self.assertTrue(n.all(n.around(n.abs(vis - vis_ans), 2) == 0))
         
 
