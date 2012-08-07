@@ -42,8 +42,13 @@ class CudaExtension(Extension):
         else: self.cuda_extra_compile_args.append('-m32')
         self.cuda_extra_compile_args.append('-Xcompiler')
         self.cuda_extra_compile_args.append('-fPIC')
-
-
+        # Extra args for debugging
+        self.cuda_extra_compile_args.append('-g')
+        self.cuda_extra_compile_args.append('-G')
+        # Specifically for Fermi GPU
+        self.cuda_extra_compile_args.append('-arch=compute_20')
+        self.cuda_extra_compile_args.append('-code=sm_20')
+        
 class cuda_build_ext(build_ext):
     def build_extension(self, ext):
         if isinstance(ext, CudaExtension):
@@ -54,14 +59,14 @@ class cuda_build_ext(build_ext):
             ext.extra_objects += objects
         build_ext.build_extension(self, ext)
 
-setup(name = 'aipy_cuda',
-    description = 'Test CUDA access from Python',
-    author = 'Gilbert Hsyu and Aaron Parsons',
+setup(name = 'cuda_compress',
+    description = 'Compress data using CUDA from Python',
+    author = 'Gilbert Hsyu',
     version = '0.0.0',
-    package_dir = {'aipy_cuda':'src'},
-    packages = ['aipy_cuda'],
+    package_dir = {'cuda_compress':'src'},
+    packages = ['cuda_compress'],
     ext_modules = [
-        CudaExtension('aipy_cuda._aipy', ['src/_aipy/vis_sim_wrap.c'],
+        CudaExtension('cuda_compress._fft', ['src/_cuda_compress/wrap_fft.c'],
             cuda_sources = ['src/_aipy/vis_sim.cu'],
             include_dirs = ['src/_aipy', numpy.get_include()],),
         CudaExtension('aipy_cuda.adder', ['src/_aipy/cuda_add_wrap.c'],

@@ -7,7 +7,7 @@ PyObject *wrap_vis_sim(PyObject *self, PyObject *args){
 	PyArrayObject *baseline, *src_dir, *src_int, *src_index, *freqs, *mfreqs, *beam_arr;
 	PyArrayObject *vis_array;
 	npy_intp N_fq, N_src, d0, d1, N_beam_fq, l, m;
-    npy_float lmin, lmax, mmin, mmax, beamfqmin, beamfqmax;
+	npy_float lmin, lmax, mmin, mmax, beamfqmin, beamfqmax;
 
 	if(!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!ffffff",   &PyArray_Type, &baseline, 
                                                          &PyArray_Type, &src_dir, 
@@ -22,7 +22,7 @@ PyObject *wrap_vis_sim(PyObject *self, PyObject *args){
 	}
 
 	N_fq = PyArray_Size((PyObject *)freqs);
-    N_src = PyArray_Size((PyObject *)src_int);
+	N_src = PyArray_Size((PyObject *)src_int);
 
     //if the baseline is not 3 numbers, raise an error
     if (PyArray_Size((PyObject *)baseline) != 3){
@@ -80,12 +80,12 @@ PyObject *wrap_vis_sim(PyObject *self, PyObject *args){
 	vis_sim(
 	(float *)PyArray_DATA(baseline), // access pointer to data buffer, cast as floats
 	(float *)PyArray_DATA(src_dir),
-    (float *)PyArray_DATA(src_int),
-    (float *)PyArray_DATA(src_index),
-    (float *)PyArray_DATA(freqs),
-    (float *)PyArray_DATA(mfreqs),
+	(float *)PyArray_DATA(src_int),
+	(float *)PyArray_DATA(src_index),
+	(float *)PyArray_DATA(freqs),
+	(float *)PyArray_DATA(mfreqs),
 	(float *)PyArray_DATA(vis_array), 
-    (float *)PyArray_DATA(beam_arr),
+	(float *)PyArray_DATA(beam_arr),
     l, m, N_beam_fq, lmin, lmax, mmin, mmax, beamfqmin, beamfqmax,
     N_fq, N_src // pass pointer to sum buffer to hold result
 	);

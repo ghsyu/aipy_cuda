@@ -26,8 +26,21 @@ static void HandleError( cudaError_t err,
         exit( EXIT_FAILURE );
     }
 }
-#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 
+static void __cudaCheckError( const char *file, const int line )
+{
+
+	cudaError_t err = cudaGetLastError();
+    if ( cudaSuccess != err )
+    {
+        fprintf( stderr, "cudaCheckError() failed at %s:%i : %s\n",
+                 file, line, cudaGetErrorString( err ) );
+        exit( -1 );
+    }
+}
+
+#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
+#define CudaCheckError()    __cudaCheckError( __FILE__, __LINE__ )
 #ifdef __cplusplus
 }
 #endif
