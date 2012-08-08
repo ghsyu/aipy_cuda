@@ -85,26 +85,20 @@ int vis_sim(float *baseline, float *src_dir, float *src_int, float *src_index,
     HANDLE_ERROR(cudaMalloc3DArray(&dev_beam_arr, &channelDesc, beam_arr_size));
 	
 	// Move the arrays onto the GPU
-	cudaMemcpy(dev_baseline,  baseline,  3*sizeof(float),         
-		cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_src_dir,   src_dir,   3*N_src*sizeof(float),         
-		cudaMemcpyHostToDevice);    
-	cudaMemcpy(dev_src_int,   src_int,   N_src*sizeof(float),         
-		cudaMemcpyHostToDevice);    
-	cudaMemcpy(dev_src_index, src_index, N_src*sizeof(float),
-		cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_freqs,     freqs,     N_fq*sizeof(float),         
-		cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_mfreqs,    mfreqs,    N_src*sizeof(float),
-		cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_N_fq,      &N_fq,      sizeof(int),    cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_N_src,     &N_src,     sizeof(int),    cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_lmin,      &lmin,      sizeof(float),  cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_lmax,      &lmax,      sizeof(float),  cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_mmin,      &mmin,      sizeof(float),  cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_mmax,      &mmax,      sizeof(float),  cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_beamfqmin, &beamfqmin, sizeof(float),  cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_beamfqmax, &beamfqmax, sizeof(float),  cudaMemcpyHostToDevice);
+	HANDLE_ERROR(cudaMemcpy(dev_baseline,  baseline,  3*sizeof(float),       cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_src_dir,   src_dir,   3*N_src*sizeof(float), cudaMemcpyHostToDevice));    
+	HANDLE_ERROR(cudaMemcpy(dev_src_int,   src_int,   N_src*sizeof(float),   cudaMemcpyHostToDevice));    
+	HANDLE_ERROR(cudaMemcpy(dev_src_index, src_index, N_src*sizeof(float),   cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_freqs,     freqs,     N_fq*sizeof(float),    cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_mfreqs,    mfreqs,    N_src*sizeof(float),   cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_N_fq,      &N_fq,      sizeof(int),    cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_N_src,     &N_src,     sizeof(int),    cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_lmin,      &lmin,      sizeof(float),  cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_lmax,      &lmax,      sizeof(float),  cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_mmin,      &mmin,      sizeof(float),  cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_mmax,      &mmax,      sizeof(float),  cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_beamfqmin, &beamfqmin, sizeof(float),  cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_beamfqmax, &beamfqmax, sizeof(float),  cudaMemcpyHostToDevice));
 
 	//Copy the beam_arr array onto the GPU
 	cudaMemcpy3DParms copyParams = {0};
@@ -112,7 +106,7 @@ int vis_sim(float *baseline, float *src_dir, float *src_int, float *src_index,
 	copyParams.dstArray = dev_beam_arr;
 	copyParams.extent   = beam_arr_size;
 	copyParams.kind     = cudaMemcpyHostToDevice;
-	cudaMemcpy3D(&copyParams);
+	HANDLE_ERROR(cudaMemcpy3D(&copyParams));
 
 	//set Texture parameters
 	tex.normalized = true;
@@ -134,7 +128,7 @@ int vis_sim(float *baseline, float *src_dir, float *src_int, float *src_index,
 	sum_vis<<<N_fq,1>>>(dev_vis_arr, dev_sum_vis_arr, dev_N_fq, dev_N_src);
     CudaCheckError();
 	// copy the array back
-	cudaMemcpy(vis_arr, dev_sum_vis_arr, 2 * N_fq * sizeof(float), cudaMemcpyDeviceToHost);
+	HANDLE_ERROR(cudaMemcpy(vis_arr, dev_sum_vis_arr, 2 * N_fq * sizeof(float), cudaMemcpyDeviceToHost));
 	
 	//frees memory allocated on GPU
 	cudaFree(dev_baseline);
